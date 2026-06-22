@@ -11,8 +11,11 @@
 (function (global) {
   'use strict';
 
-  var PROXY = 'https://deferral-surreal-worshiper.ngrok-free.dev';
-  var PROXY_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
+  // HTTPS pages (Vercel) use their own /api routes to avoid mixed-content blocks.
+  // HTTP pages (local demo) use the Flask proxy on server 4.
+  var PROXY = (typeof window !== 'undefined' && window.location.protocol === 'https:')
+    ? '/api'
+    : 'http://192.168.5.219:3001';
   var LS_KEY = 'clari5_wa_v1';
 
   var DEFAULT_CONTACTS = [
@@ -335,8 +338,6 @@
     this._checkServer();
     setInterval(function () { self._checkServer(); }, 30000);
     this._render();
-    // Auto-poll from page load — catch replies even before a send
-    this._startAutoPolling();
   };
 
   Widget.prototype._set = function (patch) {
@@ -355,7 +356,7 @@
     var ts   = Date.now() / 1000;
     this._set({ waitingReply: true, reply: null, pollTs: ts });
     this._pollTimer = setInterval(function () {
-      fetch(PROXY + '/replies?since=' + self.state.pollTs, { headers: PROXY_HEADERS })
+      fetch(PROXY + '/replies?since=' + self.state.pollTs)
         .then(function (r) { return r.json(); })
         .then(function (data) {
           var replies = (data && data.replies) || [];
@@ -379,32 +380,6 @@
     if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
   };
 
-  // Continuous background poll — active from page load, survives drawer close
-  Widget.prototype._startAutoPolling = function () {
-    var self = this;
-    var lastTs = 0;
-    setInterval(function () {
-      fetch(PROXY + '/replies?since=' + lastTs, { headers: PROXY_HEADERS })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var replies = (data && data.replies) || [];
-          replies.forEach(function (r) {
-            if (r.ts > lastTs) lastTs = r.ts;
-            var badge = r.action ? r.action.toLowerCase() : 'reply';
-            var label = r.label || r.body;
-            // Add to activity log
-            self._addLog(badge, label, badge);
-            // Show toast even when drawer is closed
-            self._showToast('✅ Action: ' + (r.action || r.body));
-            // Pulse FAB to draw attention
-            self.fab.style.transform = 'scale(1.25)';
-            setTimeout(function () { self.fab.style.transform = ''; }, 600);
-          });
-        })
-        .catch(function () {});
-    }, 2000);
-  };
-
   Widget.prototype._addLog = function (type, text, badge) {
     var now = new Date();
     var hh  = String(now.getHours()).padStart(2, '0');
@@ -425,7 +400,7 @@
 
   Widget.prototype._checkServer = function () {
     var self = this;
-    fetch(PROXY + '/health', { headers: PROXY_HEADERS, signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined })
+    fetch(PROXY + '/health', { signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined })
       .then(function (r) { self._set({ online: r.ok }); })
       .catch(function () { self._set({ online: false }); });
   };
