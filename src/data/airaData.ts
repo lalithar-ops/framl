@@ -1,118 +1,302 @@
 export const AIRA_LAST_RUN = '19 Jun 2026 · 06:00 WAT';
 
-export const EMERGING_THREATS = [
+// ─── Intelligence Brief — Threat Cards ───────────────────────────────────────
+
+export interface ThreatData {
+  id: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  name: string;
+  whatIsHappening: string;
+  missingScenario: {
+    name: string;
+    proposedId: string;
+    status: string;
+    closestExisting: string;
+    gap: string;
+  };
+  riskOfInaction: string;
+  recommendation: string;
+  recommendationTab2Id: string;
+}
+
+export const EMERGING_THREATS: ThreatData[] = [
   {
     id: 'T-NG-01',
-    severity: 'HIGH' as const,
-    name: 'AI Voice Cloning for CEO / CFO Impersonation',
-    geography: 'Nigeria (Lagos, Abuja) · West Africa',
-    source: 'CBN Risk-Based Supervision Circular 2026',
-    ref: 'CBN/RBS/DIR/2026/012',
-    description:
-      'Fraudsters use AI-generated voice clones of corporate executives to instruct finance staff to initiate urgent SWIFT or NIP transfers to "approved" accounts. 3 FBN corporate clients reported variants of this pattern in Q1 2026. The voice clone bypasses callback verification in 4 of 5 cases observed.',
-    coverage: 'PARTIAL' as const,
-    coverageNote: 'BEC rule exists but voice-channel trigger not included',
+    severity: 'CRITICAL',
+    name: 'Account Takeover via SIM Swap + BVN Spoofing Combo',
+    whatIsHappening:
+      'Fraudsters obtain customer BVN data from dark web brokers (₦500–₦2,000 per record), bribe telecom agents to execute SIM swap, then use the hijacked SIM to receive OTPs and complete NIP/mobile transfers. The full attack cycle takes under 4 hours. FBN logged 187 confirmed SIM swap ATOs in Q1 2026, concentrated in Retail and MSME segments. Average loss per incident: ₦312,000.\nSource: NCC/FRAUD/2026/004 · NFIU/2026/TYP/03',
+    missingScenario: {
+      name: 'SIM Swap + BVN Mismatch Combo — Hard Stop',
+      proposedId: 'FBN-FRAUD-091',
+      status: 'NOT IN SUITE',
+      closestExisting:
+        'SCN-FBN-042 (SIM Swap Alert) — fires on SIM age alone, does not combine BVN mismatch or NIP velocity',
+      gap:
+        'SCN-FBN-042 generates 340 alerts/month; only 12% are true positives because it lacks the BVN mismatch condition. The combo scenario would raise precision to ~78% based on Q1 2026 cohort data.',
+    },
+    riskOfInaction:
+      'Estimated undetected exposure (Q2 2026): ₦58.4M\nProjected case volume without new scenario: 240 ATOs/quarter\nCBN regulatory exposure: CBN/FRAML/2026/003 requires institutions to demonstrate adaptive scenario coverage for FATF-flagged typologies. Failure to add this scenario creates a documented CBN audit gap.',
+    recommendation: 'SAT Proposal FBN-FRAUD-091 (Tab 2, Card 1)',
+    recommendationTab2Id: 'FBN-FRAUD-091',
   },
   {
     id: 'T-NG-02',
-    severity: 'HIGH' as const,
-    name: 'SIM Swap + BVN Spoofing Combo Attack',
-    geography: 'Nigeria-wide · MTN, Airtel, Glo networks',
-    source: 'NCC Fraud Advisory Q1 2026 + NFIU Typology 2025',
-    ref: 'NCC/FRAUD/2026/004 · NFIU/2026/TYP/03',
-    description:
-      'Fraudsters execute SIM swap via compromised telecom agents, then use the new SIM to receive OTPs. BVN details are obtained from dark web data brokers selling Nigerian financial records. The combination — live SIM + valid BVN + OTP intercept — bypasses standard identity verification in mobile and internet banking. FBN sees 340% YoY increase in this pattern (see RTSE NET-0017).',
-    coverage: 'PARTIAL' as const,
-    coverageNote: 'SIM swap signal exists; BVN mismatch not combined as joint condition',
+    severity: 'HIGH',
+    name: 'Business Email Compromise — AI Voice Clone Variant',
+    whatIsHappening:
+      'Fraudsters use publicly available voice cloning tools (ElevenLabs, RVC) to clone the voice of a corporate client\'s CEO or CFO. They call the finance team instructing an urgent SWIFT or NIP transfer to a "pre-approved" beneficiary added 24–72 hours earlier. The clone passes callback verification in 4 of 5 tested cases. 3 FBN corporate clients (Merchant Banking segment) were targeted in Q1 2026; 1 resulted in a ₦47.2M loss (Case CASE-2841, ALT-9841, currently open).\nSource: CBN/RBS/DIR/2026/012 · FinCEN BEC Advisory 2026-03',
+    missingScenario: {
+      name: 'BEC — New Beneficiary + Out-of-Pattern SWIFT',
+      proposedId: 'FBN-FRAUD-094',
+      status: 'NOT IN SUITE',
+      closestExisting:
+        'SCN-FBN-031 (BEC Alert) — triggers on email domain lookalike only; does not factor in beneficiary age, SWIFT amount deviation from 90-day average, or instruction channel (phone/email vs portal)',
+      gap:
+        'SCN-FBN-031 missed ALT-9841 at instruction stage. The alert fired only after RTSE ML engine scored 0.94 on Day 11 of drift — 9 business days after the fraudulent beneficiary was added. A combined scenario would have flagged this within 2 hours.',
+    },
+    riskOfInaction:
+      'Estimated undetected exposure (next 90 days): ₦180–₦220M (based on 3 incidents × ₦47M avg × growth trajectory)\nReputational risk: Merchant Banking segment, high-value corporate clients — loss of 1 account at this tier costs FBN ₦80–₦120M AUM.\nRegulatory: STR filing obligation under NFIU/2026/STR/11 triggered only after loss; proactive detection avoids post-hoc filing risk.',
+    recommendation: 'SAT Proposal FBN-FRAUD-094 (Tab 2, Card 2)',
+    recommendationTab2Id: 'FBN-FRAUD-094',
   },
   {
     id: 'T-NG-03',
-    severity: 'MEDIUM' as const,
-    name: 'USSD Session Hijacking via Social Engineering',
-    geography: 'Nigeria · Rural and semi-urban segments',
-    source: 'NIBSS Industry Fraud Report H2 2025',
-    ref: 'NIBSS/IFR/2025/H2',
-    description:
-      'Fraudsters impersonate USSD technical support agents, guide customers through a "verification" sequence that re-registers their USSD profile on the fraudster\'s device. Transfers follow within 3–8 minutes of the re-registration. Predominantly targets Firstmonie and USSD *894# channel customers. Average loss: ₦55,000.',
-    coverage: 'NOT_COVERED' as const,
-    coverageNote: 'No scenario currently monitors USSD re-registration + transfer velocity as a combined signal',
+    severity: 'HIGH',
+    name: 'USSD Session Hijack — Firstmonie & *894# Channel',
+    whatIsHappening:
+      'Fraudsters impersonate Clari5 or FBN USSD technical support, call customers and guide them through a "re-verification" sequence on *894# that re-registers their USSD profile on the fraudster\'s device. Within 3–10 minutes of re-registration, multiple NIP transfers go to new beneficiaries, exhausting the daily limit. Primarily targets low-income retail and rural customers. Average loss: ₦55,000. Predominantly affects customers who also recently received a SIM (< 7 days old) — telecom-fraud convergence.\nSource: NIBSS/IFR/2025/H2 · FBN Internal Fraud Report Q1 2026',
+    missingScenario: {
+      name: 'USSD Re-registration + Transfer Velocity',
+      proposedId: 'FBN-FRAUD-097',
+      status: 'NOT IN SUITE',
+      closestExisting:
+        'SCN-FBN-018 (USSD Velocity) — monitors transfer frequency on USSD channel but does NOT check for profile re-registration event as a precursor signal',
+      gap:
+        '8 confirmed USSD hijack cases in FBN Q1 2026 — zero were caught by SCN-FBN-018 at detection stage. All 8 were identified only during post-incident reconciliation. Average time-to-detect: 18h. A re-registration trigger would reduce TTD to under 6 minutes.',
+    },
+    riskOfInaction:
+      'Confirmed undetected losses Q1 2026: ₦4.4M (8 cases)\nProjected Q2 2026 without scenario: ₦6–₦9M (growth trend)\nCBN Consumer Protection framework: FBN is liable for USSD fraud losses where detection controls are demonstrably absent. Lack of a re-registration scenario creates direct liability exposure.\nNIBSS reporting: NIBSS/IFR requires member banks to demonstrate corrective action within 90 days of published typology.',
+    recommendation: 'SAT Proposal FBN-FRAUD-097 (Tab 2, Card 3)',
+    recommendationTab2Id: 'FBN-FRAUD-097',
   },
 ];
 
-export const RULE_PROPOSALS = [
+// ─── SAT Scenario Proposals ───────────────────────────────────────────────────
+
+export type SATStatus = 'DRAFT' | 'REVIEW' | 'UAT' | 'ACTIVE' | 'REJECTED';
+export type SATModule = 'Fraud Detection' | 'AML' | 'FRAML';
+export type SATConditionLogic = 'AND' | 'SEQUENTIAL';
+
+export interface SATCondition {
+  signal: string;
+  operator: string;
+  value: string;
+}
+
+export interface SATScenarioCard {
+  proposedId: string;
+  name: string;
+  satModule: SATModule;
+  scenarioType: string;
+  channels: string[];
+  segments: string[];
+  priority: 'P1' | 'P2' | 'P3';
+  priorityLabel: string;
+  estFpRate: string;
+  conditions: {
+    logic: SATConditionLogic;
+    rules: SATCondition[];
+  };
+  actions: string[];
+  regulatoryBasis: string[];
+  replacesScenario?: string;
+  gapNote?: string;
+  status: SATStatus;
+}
+
+export const SAT_PROPOSALS: SATScenarioCard[] = [
   {
-    id: 'HS-NG-01',
-    type: 'HARD_STOP' as const,
-    name: 'SIM Swap + BVN Mismatch + High-Value NIP Transfer',
-    confidence: 'HIGH' as const,
-    conditions: [
-      { signal: 'sim_swap_detected', operator: 'eq', value: 'true' },
-      { signal: 'sim_age_hours', operator: 'lte', value: '48' },
-      { signal: 'bvn_device_mismatch', operator: 'eq', value: 'true' },
-      { signal: 'nip_transfer_amount', operator: 'gte', value: '5× income_estimate' },
+    proposedId: 'FBN-FRAUD-091',
+    name: 'SIM Swap + BVN Mismatch Combo — Hard Stop',
+    satModule: 'Fraud Detection',
+    scenarioType: 'Combination Rule — Multi-Signal (AND Logic)',
+    channels: ['NIP', 'Mobile Banking', 'Internet Banking'],
+    segments: ['Retail', 'MSME'],
+    priority: 'P1',
+    priorityLabel: 'P1 — Hard Stop (blocks transaction, raises alert)',
+    estFpRate: '~22%  (current SCN-FBN-042 FP rate: 88%)',
+    conditions: {
+      logic: 'AND',
+      rules: [
+        { signal: 'sim_swap_confirmed', operator: '=', value: 'true' },
+        { signal: 'sim_age', operator: '<', value: '48 hours' },
+        { signal: 'bvn_device_mismatch', operator: '=', value: 'true' },
+        { signal: 'nip_transfer_amount', operator: '≥', value: '5× customer_income_band_estimate' },
+      ],
+    },
+    actions: [
+      'Hard Stop — block NIP transfer pending review',
+      'P1 Alert — Fraud Ops queue (15-min SLA)',
+      'Account Freeze — manual review hold',
+      'Customer Notification — "Transaction blocked for your security"',
     ],
-    action: 'BLOCK + ALERT + FREEZE_PENDING_REVIEW',
-    rationale:
-      'NCC/FRAUD/2026/004 + NFIU/2026/TYP/03 confirm SIM swap combined with BVN mismatch and velocity as the dominant ATO vector in Nigeria. FBN\'s own Q1 2026 cohort confirms 9 ATO cases match this exact signal combination. No current hard-stop covers this.',
-    status: 'PENDING' as const,
+    regulatoryBasis: [
+      'NCC/FRAUD/2026/004 · NFIU/2026/TYP/03 · FATF Digital Identity 2026',
+      'FBN Internal: 187 ATO cases Q1 2026 match this pattern',
+    ],
+    replacesScenario: 'SCN-FBN-042 (SIM Swap Alert — single signal)',
+    status: 'DRAFT',
   },
   {
-    id: 'COMBO-NG-04',
-    type: 'COMBINATION' as const,
-    name: 'USSD Re-registration + Transfer Velocity',
-    confidence: 'HIGH' as const,
-    conditions: [
-      { signal: 'ussd_reregistration', operator: 'eq', value: 'true' },
-      { signal: 'time_to_first_transfer', operator: 'lte', value: '10 min' },
-      { signal: 'new_beneficiary_count', operator: 'gte', value: '2' },
-      { signal: 'transfer_to_new_payee', operator: 'gte', value: '80%' },
+    proposedId: 'FBN-FRAUD-094',
+    name: 'BEC — New Beneficiary + Out-of-Pattern SWIFT/NIP',
+    satModule: 'Fraud Detection',
+    scenarioType: 'Combination Rule — Behavioural + Velocity',
+    channels: ['SWIFT', 'NIP', 'Corporate Internet Banking'],
+    segments: ['Corporate', 'Merchant Banking'],
+    priority: 'P1',
+    priorityLabel: 'P1 — Hard Stop + Mandatory Callback Flag',
+    estFpRate: '~18%  (current SCN-FBN-031 FP rate: 71%)',
+    conditions: {
+      logic: 'AND',
+      rules: [
+        { signal: 'corporate_account', operator: '=', value: 'true' },
+        { signal: 'beneficiary_age_days', operator: '<', value: '4 days' },
+        { signal: 'transfer_amount', operator: '≥', value: '3× customer_90d_avg_outward' },
+        { signal: 'instruction_channel', operator: '=', value: 'email OR phone (not portal)' },
+        { signal: 'time_beneficiary_to_txn', operator: '≤', value: '30 minutes' },
+      ],
+    },
+    actions: [
+      'Hard Stop — block SWIFT/NIP transfer',
+      'P1 Alert — Senior Fraud Analyst queue (immediate SLA)',
+      'Mandatory Callback Flag — system forces RM verification call',
+      'Supervisor Escalation — auto-notify team lead for amounts ≥ ₦10M',
     ],
-    action: 'ALERT + STEP_UP_AUTH',
-    rationale:
-      'NIBSS/IFR/2025/H2 identifies USSD session hijack as gap typology. FBN cohort Q1 2026 — all 8 USSD intercept cases had re-registration within 10 min of first fraudulent transfer. No current scenario combines these two signals.',
-    status: 'PENDING' as const,
+    regulatoryBasis: [
+      'CBN/RBS/DIR/2026/012 (AI fraud) · FinCEN BEC Advisory 2026-03',
+      'FBN Internal: Case CASE-2841 (ALT-9841) — ₦47.2M BEC, Q2 2026',
+    ],
+    replacesScenario: 'SCN-FBN-031 (BEC — email domain lookalike only)',
+    gapNote:
+      'SCN-FBN-031 missed CASE-2841 at Day 1; this scenario would have flagged it within 2 hours of beneficiary add.',
+    status: 'DRAFT',
   },
   {
-    id: 'COMBO-NG-07',
-    type: 'COMBINATION' as const,
-    name: 'CEO Voice Clone Indicator (BEC + Audio Channel Flag)',
-    confidence: 'MEDIUM' as const,
-    conditions: [
-      { signal: 'corporate_account', operator: 'eq', value: 'true' },
-      { signal: 'new_beneficiary_added', operator: 'eq', value: 'true' },
-      { signal: 'payment_instruction_src', operator: 'eq', value: 'phone_or_email' },
-      { signal: 'transfer_amount', operator: 'gte', value: '3× avg_30d' },
-      { signal: 'time_payee_to_transfer', operator: 'lte', value: '30 min' },
+    proposedId: 'FBN-FRAUD-097',
+    name: 'USSD Re-registration + Transfer Velocity — Alert',
+    satModule: 'Fraud Detection',
+    scenarioType: 'Sequential Event Rule — Precursor + Velocity',
+    channels: ['USSD (*894#)', 'Firstmonie'],
+    segments: ['Retail — Mass Market'],
+    priority: 'P2',
+    priorityLabel: 'P2 — Alert + Step-Up Auth',
+    estFpRate: '~31%  (current SCN-FBN-018 detection rate: 0%)',
+    conditions: {
+      logic: 'SEQUENTIAL',
+      rules: [
+        { signal: 'ussd_profile_reregistration', operator: '=', value: 'true' },
+        { signal: 'time_since_reregistration', operator: '≤', value: '15 minutes' },
+        { signal: 'nip_transfer_count_post_rereg', operator: '≥', value: '2 transfers' },
+        { signal: 'transfer_to_new_payee_ratio', operator: '≥', value: '75%' },
+      ],
+    },
+    actions: [
+      'P2 Alert — Fraud Ops queue (30-min SLA)',
+      'Step-Up Authentication — OTP re-challenge before transfer completes',
+      'USSD Session Freeze — block further transfers pending verification',
+      'Customer Notification — "Unusual activity on your USSD profile"',
     ],
-    action: 'ALERT + MANUAL_CALLBACK_REQUIRED',
-    rationale:
-      'CBN/RBS/DIR/2026/012 flags AI voice cloning as emerging threat for corporate accounts. FBN has 3 confirmed BEC cases in Q1 2026 where callback protocol was bypassed. Adding payment_instruction_src as a signal strengthens BEC rule precision for corporate segment.',
-    status: 'PENDING' as const,
+    regulatoryBasis: [
+      'NIBSS/IFR/2025/H2 · CBN Consumer Protection Framework 2023',
+      'FBN Internal: 8 confirmed USSD hijack cases Q1 2026; 0 detected by existing scenarios',
+    ],
+    gapNote:
+      'New scenario — no existing coverage. Closest: SCN-FBN-018 (USSD Velocity — misses re-registration precursor, hence 0% detection).',
+    status: 'DRAFT',
   },
   {
-    id: 'EMERGING-NG-02',
-    type: 'EMERGING' as const,
-    name: 'Crypto Off-Ramp Layering via P2P',
-    confidence: 'MEDIUM' as const,
-    conditions: [
-      { signal: 'counterparty_type', operator: 'eq', value: 'crypto_exchange_p2p' },
-      { signal: 'transaction_count_24h', operator: 'gte', value: '5' },
-      { signal: 'avg_transaction_amount', operator: 'between', value: '₦50K – ₦500K' },
-      { signal: 'counterparty_diversity', operator: 'gte', value: '4 unique accts' },
+    proposedId: 'FBN-FRAUD-099',
+    name: 'Crypto P2P Off-Ramp — Structuring Pattern',
+    satModule: 'FRAML',
+    scenarioType: 'Pattern Rule — Structuring Detection',
+    channels: ['NIP', 'Corporate Internet Banking', 'USSD'],
+    segments: ['All segments'],
+    priority: 'P2',
+    priorityLabel: 'P2 — AML Review Queue + SAR Candidate Flag',
+    estFpRate: '~27%  (no existing scenario — new coverage area)',
+    conditions: {
+      logic: 'AND',
+      rules: [
+        { signal: 'counterparty_type', operator: '=', value: 'crypto_p2p_exchange OR fintech_wallet' },
+        { signal: 'nip_transaction_count', operator: '≥', value: '5 within 24 hours' },
+        { signal: 'avg_transaction_amount', operator: 'between', value: '₦50,000 and ₦499,999' },
+        { signal: 'unique_counterparty_count', operator: '≥', value: '4 distinct accounts' },
+        { signal: 'cumulative_daily_amount', operator: '≥', value: '₦1,500,000' },
+      ],
+    },
+    actions: [
+      'P2 AML Alert — Compliance queue (4-hour SLA)',
+      'SAR Candidate Flag — case marked for potential STR to NFIU via GoAML',
+      'Enhanced Due Diligence prompt — system requests RM to update CDD',
     ],
-    action: 'ALERT + AML_REVIEW_QUEUE',
-    rationale:
-      'CBN/AML/2026/008 and EFCC Q2 2026 bulletin identify P2P crypto off-ramp as the dominant layering mechanism for Nigerian fraud proceeds post-2025. FATF Typology 2026 confirms globally. No current FBN scenario covers crypto-linked structuring.',
-    status: 'PENDING' as const,
+    regulatoryBasis: [
+      'CBN/AML/2026/008 · EFCC Q2 2026 Bulletin · FATF Typology 2026',
+      'NFIU GoAML threshold: transactions structured below ₦500K to avoid CBN reporting threshold of ₦5M per transaction',
+    ],
+    gapNote:
+      'New scenario — no existing coverage. FATF and EFCC both identify crypto P2P structuring as dominant ML proceeds mechanism in Nigeria post-2025.',
+    status: 'DRAFT',
   },
 ];
 
 export const GAP_ANALYSIS = [
-  { id: 'GAP-NG-01', threat: 'SIM Swap + BVN Combo ATO', ref: 'NCC/FRAUD/2026/004', coverage: 'PARTIAL' as const, risk: 'CRITICAL' as const, recommendation: 'HS-NG-01' },
-  { id: 'GAP-NG-02', threat: 'USSD Session Hijack', ref: 'NIBSS/IFR/2025/H2', coverage: 'NOT_COVERED' as const, risk: 'CRITICAL' as const, recommendation: 'COMBO-NG-04' },
-  { id: 'GAP-NG-03', threat: 'AI Voice Clone / BEC', ref: 'CBN/RBS/DIR/2026/012', coverage: 'PARTIAL' as const, risk: 'HIGH' as const, recommendation: 'COMBO-NG-07' },
-  { id: 'GAP-NG-04', threat: 'Crypto P2P Layering', ref: 'CBN/AML/2026/008', coverage: 'NOT_COVERED' as const, risk: 'HIGH' as const, recommendation: 'EMERGING-NG-02' },
-  { id: 'GAP-NG-05', threat: 'Romance Scam Mule Funding', ref: 'EFCC Alert Q2 2026', coverage: 'NOT_COVERED' as const, risk: 'MEDIUM' as const, recommendation: 'Propose new scenario' },
+  {
+    id: 'GAP-NG-01',
+    threat: 'SIM Swap + BVN Combo ATO',
+    ref: 'NCC/FRAUD/2026/004',
+    coverage: 'PARTIAL' as const,
+    risk: 'CRITICAL' as const,
+    recommendation: 'HS-NG-01',
+    proposedScenario: 'FBN-FRAUD-091',
+  },
+  {
+    id: 'GAP-NG-02',
+    threat: 'USSD Session Hijack',
+    ref: 'NIBSS/IFR/2025/H2',
+    coverage: 'NOT_COVERED' as const,
+    risk: 'CRITICAL' as const,
+    recommendation: 'COMBO-NG-04',
+    proposedScenario: 'FBN-FRAUD-097',
+  },
+  {
+    id: 'GAP-NG-03',
+    threat: 'AI Voice Clone / BEC',
+    ref: 'CBN/RBS/DIR/2026/012',
+    coverage: 'PARTIAL' as const,
+    risk: 'HIGH' as const,
+    recommendation: 'COMBO-NG-07',
+    proposedScenario: 'FBN-FRAUD-094',
+  },
+  {
+    id: 'GAP-NG-04',
+    threat: 'Crypto P2P Layering',
+    ref: 'CBN/AML/2026/008',
+    coverage: 'NOT_COVERED' as const,
+    risk: 'HIGH' as const,
+    recommendation: 'EMERGING-NG-02',
+    proposedScenario: 'FBN-FRAUD-099',
+  },
+  {
+    id: 'GAP-NG-05',
+    threat: 'Romance Scam Mule Funding',
+    ref: 'EFCC Alert Q2 2026',
+    coverage: 'NOT_COVERED' as const,
+    risk: 'MEDIUM' as const,
+    recommendation: 'Propose new scenario',
+    proposedScenario: '—',
+  },
 ];
 
 export const REGULATORY_SOURCES = [
