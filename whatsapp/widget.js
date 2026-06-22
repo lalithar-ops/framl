@@ -11,7 +11,7 @@
 (function (global) {
   'use strict';
 
-  var PROXY = 'http://127.0.0.1:3001';
+  var PROXY = 'https://deferral-surreal-worshiper.ngrok-free.dev';
   var LS_KEY = 'clari5_wa_v1';
 
   var DEFAULT_CONTACTS = [
@@ -334,6 +334,8 @@
     this._checkServer();
     setInterval(function () { self._checkServer(); }, 30000);
     this._render();
+    // Auto-poll from page load — catch replies even before a send
+    this._startAutoPolling();
   };
 
   Widget.prototype._set = function (patch) {
@@ -374,6 +376,32 @@
 
   Widget.prototype._stopPolling = function () {
     if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+  };
+
+  // Continuous background poll — active from page load, survives drawer close
+  Widget.prototype._startAutoPolling = function () {
+    var self = this;
+    var lastTs = 0;
+    setInterval(function () {
+      fetch(PROXY + '/replies?since=' + lastTs)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var replies = (data && data.replies) || [];
+          replies.forEach(function (r) {
+            if (r.ts > lastTs) lastTs = r.ts;
+            var badge = r.action ? r.action.toLowerCase() : 'reply';
+            var label = r.label || r.body;
+            // Add to activity log
+            self._addLog(badge, label, badge);
+            // Show toast even when drawer is closed
+            self._showToast('✅ Action: ' + (r.action || r.body));
+            // Pulse FAB to draw attention
+            self.fab.style.transform = 'scale(1.25)';
+            setTimeout(function () { self.fab.style.transform = ''; }, 600);
+          });
+        })
+        .catch(function () {});
+    }, 2000);
   };
 
   Widget.prototype._addLog = function (type, text, badge) {
