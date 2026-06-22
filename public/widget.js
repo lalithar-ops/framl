@@ -12,6 +12,7 @@
   'use strict';
 
   var PROXY = 'https://deferral-surreal-worshiper.ngrok-free.dev';
+  var PROXY_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
   var LS_KEY = 'clari5_wa_v1';
 
   var DEFAULT_CONTACTS = [
@@ -354,7 +355,7 @@
     var ts   = Date.now() / 1000;
     this._set({ waitingReply: true, reply: null, pollTs: ts });
     this._pollTimer = setInterval(function () {
-      fetch(PROXY + '/replies?since=' + self.state.pollTs)
+      fetch(PROXY + '/replies?since=' + self.state.pollTs, { headers: PROXY_HEADERS })
         .then(function (r) { return r.json(); })
         .then(function (data) {
           var replies = (data && data.replies) || [];
@@ -383,7 +384,7 @@
     var self = this;
     var lastTs = 0;
     setInterval(function () {
-      fetch(PROXY + '/replies?since=' + lastTs)
+      fetch(PROXY + '/replies?since=' + lastTs, { headers: PROXY_HEADERS })
         .then(function (r) { return r.json(); })
         .then(function (data) {
           var replies = (data && data.replies) || [];
@@ -424,7 +425,7 @@
 
   Widget.prototype._checkServer = function () {
     var self = this;
-    fetch(PROXY + '/health', { signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined })
+    fetch(PROXY + '/health', { headers: PROXY_HEADERS, signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined })
       .then(function (r) { self._set({ online: r.ok }); })
       .catch(function () { self._set({ online: false }); });
   };
