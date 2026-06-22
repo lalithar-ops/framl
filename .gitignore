@@ -5,5 +5,5 @@ dist/
 .vercel
 *.log
 
-# WhatsApp widget credentials
+# WhatsApp widget credentials — never commit this
 whatsapp/config.json
