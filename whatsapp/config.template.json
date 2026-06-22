@@ -1,0 +1,8 @@
+{
+  "_instructions": "Copy this file to config.json and fill in your Twilio credentials. See SETUP.md for step-by-step guide.",
+  "twilio": {
+    "account_sid": "FILL_IN_YOUR_ACCOUNT_SID",
+    "auth_token":  "FILL_IN_YOUR_AUTH_TOKEN",
+    "from_number": "+14155238886"
+  }
+}

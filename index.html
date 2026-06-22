@@ -12,13 +12,25 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Clari5 WhatsApp Alert Widget -->
+    <!-- During live demo: loads from local proxy (port 3001) for two-way functionality -->
+    <!-- When proxy is offline: loads from Vercel static (send-only, no reply polling) -->
     <script>
-(function(){
-  var s=document.createElement('script');
-  s.src='http://127.0.0.1:3001/widget.js';
-  s.onerror=function(){console.log('[Clari5] WhatsApp proxy not running')};
-  document.head.appendChild(s);
-})();
-</script>
+      (function () {
+        var proxyUrl = 'http://127.0.0.1:3001/widget.js';
+        var fallbackUrl = '/widget.js';
+        var s = document.createElement('script');
+        s.src = proxyUrl;
+        s.onerror = function () {
+          var fb = document.createElement('script');
+          fb.src = fallbackUrl;
+          fb.onerror = function () {
+            console.log('[Clari5] WhatsApp widget unavailable');
+          };
+          document.head.appendChild(fb);
+        };
+        document.head.appendChild(s);
+      })();
+    </script>
   </body>
 </html>
