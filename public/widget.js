@@ -11,7 +11,7 @@
 (function (global) {
   'use strict';
 
-  var PROXY = 'http://127.0.0.1:3001';
+  var PROXY = 'https://deferral-surreal-worshiper.ngrok-free.dev';
   var LS_KEY = 'clari5_wa_v1';
 
   var DEFAULT_CONTACTS = [
