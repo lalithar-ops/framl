@@ -278,7 +278,8 @@
   function Widget() {
     this.contacts = this._load();
     this.state = {
-      open: false, online: false, editing: -1, editVal: '',
+      // On HTTPS (Vercel) assume online until proven otherwise; on HTTP require health check
+      open: false, online: (window.location.protocol === 'https:'), editing: -1, editVal: '',
       selContact: 0, custNum: '',
       selMsg: 0, custMsg: '',
       status: 'idle',        // idle | sending | error
@@ -540,7 +541,7 @@
       // Status bar
       + '<div class="cwa-sbar">'
       + '<div class="cwa-dot ' + (s.online ? 'on' : 'off') + '"></div>'
-      + '<span class="cwa-sbar-txt">' + (s.online ? 'Proxy connected — ready to send' : 'Proxy offline — run start.bat') + '</span>'
+      + '<span class="cwa-sbar-txt">' + (s.online ? 'Ready to send' : (PROXY === '/api' ? 'Connecting to Vercel…' : 'Proxy offline — run start.bat')) + '</span>'
       + '<button class="cwa-rechk" id="cwa-rc">Recheck</button>'
       + '</div>'
       // Body
@@ -580,7 +581,7 @@
       + '</div>'
       // Footer
       + '<div class="cwa-foot">'
-      + (!s.online ? '<div class="cwa-warn">⚠️ Start <code>whatsapp/server.py</code> to enable live delivery</div>' : '')
+      + (!s.online && PROXY !== '/api' ? '<div class="cwa-warn">⚠️ Start <code>whatsapp/server.py</code> to enable live delivery</div>' : '')
       + '<button id="cwa-send" class="' + btnClass + '" ' + btnDisabled + '>' + btnContent + '</button>'
       + '</div>';
 
